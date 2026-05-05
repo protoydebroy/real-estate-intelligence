@@ -1,0 +1,98 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===========================
+# Virtual environments
+# ===========================
+venv/
+env/
+ENV/
+.venv/
+.env
+.envrc
+
+# ===========================
+# Jupyter
+# ===========================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ===========================
+# IDEs
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===========================
+# Streamlit
+# ===========================
+.streamlit/secrets.toml
+
+# ===========================
+# Project-specific:
+# Trained model artifacts (large, regenerate with model.py)
+# ===========================
+pipeline.pkl
+df.pkl
+
+# ===========================
+# Project-specific:
+# Backup folder created by rebuild_all.py
+# ===========================
+_backup_before_rebuild/
+
+# ===========================
+# Project-specific:
+# Intermediate CSVs (regenerate with rebuild_all.py)
+# Keep only raw scraped data + final model-ready CSV under git LFS
+# ===========================
+all_v1.csv
+all_v2.csv
+all_outlier.csv
+all_imputed.csv
+
+# ===========================
+# Scraper output (large — track separately)
+# Uncomment if your CSVs exceed GitHub's 100MB limit per file
+# ===========================
+# *.csv
+
+# ===========================
+# Logs & debug
+# ===========================
+*.log
+page_dump.html
+diagnose.py
+
+# ===========================
+# Secrets — NEVER commit
+# ===========================
+.env
+*.key
+api_keys.txt
+config_secrets.py
