@@ -12,10 +12,10 @@ End-to-end machine learning project for **property price prediction**, **similar
 
 The app is **deployed and live** on two platforms:
 
-| Platform | URL | Status |
-|----------|-----|:------:|
-| **Streamlit Community Cloud** | https://real-intelligence-app.streamlit.com | ✅ Live |
-| **AWS EC2** | http://YOUR_EC2_PUBLIC_IP:8501 | ✅ Live |
+| Platform | URL                                            | Status |
+|----------|------------------------------------------------|:------:|
+| **Streamlit Community Cloud** | https://real-estate-intelligence.streamlit.com | ✅ Live |
+| **AWS EC2** | http://YOUR_EC2_PUBLIC_IP:8501                 | ✅ Live |
 
 ### Screenshots
 
