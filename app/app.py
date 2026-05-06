@@ -145,12 +145,34 @@ def load_master_df():
     return df
 
 
-@st.cache_resource(show_spinner="Loading model…")
+@st.cache_resource(show_spinner=False)
 def get_pipeline():
-    if not os.path.isfile(PIPELINE_PATH):
-        st.error("`pipeline.pkl` not found. Run `python model/train_model.py` first.")
+    """
+    Load the trained pipeline. If pipeline.pkl is missing (e.g. on first
+    deploy to Streamlit Cloud), train it from the CSV on the fly. This
+    only runs once per cold start.
+    """
+    if os.path.isfile(PIPELINE_PATH):
+        with st.spinner("Loading model…"):
+            return load_pipeline(PIPELINE_PATH)
+
+    # First run on a fresh deploy → train the model now
+    if not os.path.isfile(DATA_PATH):
+        st.error(
+            f"Neither `{os.path.basename(PIPELINE_PATH)}` nor "
+            f"`{os.path.basename(DATA_PATH)}` found. "
+            "The repo is missing required files."
+        )
         st.stop()
-    return load_pipeline(PIPELINE_PATH)
+
+    from train_model import (
+        load_data, _make_xgboost, fit_final_pipeline, save_pipeline,
+    )
+    with st.spinner("Training model on first run (≈ 1–2 minutes)…"):
+        X, y, _ = load_data(DATA_PATH)
+        pipe = fit_final_pipeline(X, y, _make_xgboost(n_estimators=500))
+        save_pipeline(pipe, X)
+    return pipe
 
 
 @st.cache_resource(show_spinner="Building recommender…")

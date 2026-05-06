@@ -1,0 +1,10 @@
+[theme]
+base = "dark"
+
+[server]
+maxUploadSize = 5
+headless = true
+enableCORS = false
+
+[browser]
+gatherUsageStats = false
