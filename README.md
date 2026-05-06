@@ -12,10 +12,10 @@ End-to-end machine learning project for **property price prediction**, **similar
 
 The app is **deployed and live** on two platforms:
 
-| Platform | URL                                            | Status |
-|----------|------------------------------------------------|:------:|
+| Platform | URL              | Status |
+|----------|------------------|:------:|
 | **Streamlit Community Cloud** | https://real-estate-intelligence.streamlit.app | ✅ Live |
-| **AWS EC2** | http://YOUR_EC2_PUBLIC_IP:8501                 | ✅ Live |
+| **AWS EC2** | http://13.233.60.122:8501/                 | ✅ Live |
 
 ### Screenshots
 
@@ -732,7 +732,7 @@ The build provisions a container, installs `requirements.txt`, and starts the ap
 
 ### ☁️ AWS EC2
 
-**Live URL:** http://YOUR_EC2_PUBLIC_IP:8501
+**Live URL:** http://13.233.60.122:8501/
 
 AWS EC2 gives full server control and runs 24/7 without sleeping (small monthly cost). Useful for production traffic or when Streamlit Cloud's free tier limits become a constraint.
 
