@@ -14,7 +14,7 @@ The app is **deployed and live** on two platforms:
 
 | Platform | URL                                            | Status |
 |----------|------------------------------------------------|:------:|
-| **Streamlit Community Cloud** | https://real-estate-intelligence.streamlit.com | ✅ Live |
+| **Streamlit Community Cloud** | https://real-estate-intelligence.streamlit.app | ✅ Live |
 | **AWS EC2** | http://YOUR_EC2_PUBLIC_IP:8501                 | ✅ Live |
 
 ### Screenshots
