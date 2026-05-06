@@ -704,7 +704,7 @@ The app is deployed on **Streamlit Community Cloud** (primary) and on **AWS EC2*
 
 ### 🌐 Streamlit Community Cloud
 
-**Live URL:** https://real-intelligence-app.streamlit.com
+**Live URL:** https://real-estate-intelligence.streamlit.app
 
 Streamlit Cloud is the simplest hosting option — free tier, GitHub-backed, deploys in ~5 minutes.
 
