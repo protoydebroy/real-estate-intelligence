@@ -8,20 +8,55 @@ End-to-end machine learning project for **property price prediction**, **similar
 
 ---
 
+## 🚀 Live Demo
+
+The app is **deployed and live** on two platforms:
+
+| Platform | URL | Status |
+|----------|-----|:------:|
+| **Streamlit Community Cloud** | https://real-intelligence-app.streamlit.com | ✅ Live |
+| **AWS EC2** | http://YOUR_EC2_PUBLIC_IP:8501 | ✅ Live |
+
+### Screenshots
+
+#### 💰 Price Predictor
+Predict any property's market price by selecting city, location, and property attributes.
+
+![Price Predictor](docs/screenshots/01_price_predictor.png)
+
+#### 🔍 Recommender
+Find similar properties by city, location, type, BHK and budget. Adjust the similarity weights in the expander.
+
+![Recommender](docs/screenshots/02_recommender.png)
+
+#### 📊 Insights — Both cities at a glance
+Side-by-side stats with model R² per city, plus filtering controls.
+
+![Insights Overview](docs/screenshots/03_insights_overview.png)
+
+#### 🗺 Insights — Interactive map
+Each dot is a sector, sized and colored by price / property count / ₹ per sqft (toggleable).
+
+![Insights Map](docs/screenshots/04_insights_map.png)
+
+---
+
 ## 📑 Table of Contents
 
-1. [Overview](#overview)
-2. [Pipeline Flowchart](#pipeline-flowchart)
-3. [Repo Structure](#repo-structure)
-4. [Tech Stack](#tech-stack)
-5. [Stage 1 — Data Gathering (Web Scraping)](#stage-1--data-gathering-web-scraping)
-6. [Stage 2 — Data Preprocessing (7 sub-stages)](#stage-2--data-preprocessing)
-7. [Stage 3 — Model Building](#stage-3--model-building)
-8. [Stage 4 — Recommender System](#stage-4--recommender-system)
-9. [Stage 5 — Insights Module](#stage-5--insights-module)
-10. [Stage 6 — Streamlit App](#stage-6--streamlit-app)
-11. [Setup & Run](#setup--run)
-12. [Results](#results)
+1. [Live Demo](#-live-demo)
+2. [Overview](#overview)
+3. [Pipeline Flowchart](#pipeline-flowchart)
+4. [Repo Structure](#repo-structure)
+5. [Tech Stack](#tech-stack)
+6. [Stage 1 — Data Gathering (Web Scraping)](#stage-1--data-gathering-web-scraping)
+7. [Stage 2 — Data Preprocessing (7 sub-stages)](#stage-2--data-preprocessing)
+8. [Stage 3 — Model Building](#stage-3--model-building)
+9. [Stage 4 — Recommender System](#stage-4--recommender-system)
+10. [Stage 5 — Insights Module](#stage-5--insights-module)
+11. [Stage 6 — Streamlit App](#stage-6--streamlit-app)
+12. [Setup & Run](#setup--run)
+13. [Deployment](#deployment)
+14. [Results](#results)
 
 ---
 
@@ -30,7 +65,7 @@ End-to-end machine learning project for **property price prediction**, **similar
 | | Gurgaon | Bangalore | Total |
 |---|---:|---:|---:|
 | Properties (final) | 3,583 | 955 | **4,538** |
-| Locations | 113 | 167 | **272** |
+| Locations | 113 | 160 | **273** |
 | Price range (₹ Cr) | 0.07 – 31.5 | 0.40 – 36.0 | – |
 
 The project produces a Streamlit web app with three modules:
@@ -316,6 +351,13 @@ Applies a `SECTOR_MAP` of ~50 known Gurgaon aliases:
 
 Drops sectors with < 3 listings (not statistically representative).
 
+**Bangalore sector names are also simplified** — verbose strings are reduced to the core neighborhood name:
+- `whitefield, bangalore` → `whitefield`
+- `koramangala, bangalore` → `koramangala`
+- `chikkagubbi, hennur road` → `chikkagubbi`
+- `bidaraguppe, bangalore south` → `bidaraguppe`
+- `balagere, near panathur, bangalore` → `balagere`
+
 ### Stage 4 — Feature engineering
 
 **File:** [`preprocessing/04_feature_engineering.py`](preprocessing/04_feature_engineering.py)
@@ -488,7 +530,7 @@ rec = PropertyRecommender('data/processed/all_final_v2.csv')
 
 results = rec.recommend_by_filters(
     city          = 'bangalore',
-    sector        = 'whitefield, bangalore',
+    sector        = 'whitefield',
     property_type = 'flat',
     bedrooms      = 3,
     budget_max    = 3.0,    # ₹ 3 Cr max
@@ -656,6 +698,132 @@ streamlit run app/app.py
 
 ---
 
+## Deployment
+
+The app is deployed on **Streamlit Community Cloud** (primary) and on **AWS EC2** (backup / portfolio demo). Both deployments serve from the same GitHub repo, so a `git push` updates everywhere.
+
+### 🌐 Streamlit Community Cloud
+
+**Live URL:** https://real-intelligence-app.streamlit.com
+
+Streamlit Cloud is the simplest hosting option — free tier, GitHub-backed, deploys in ~5 minutes.
+
+**Deployment steps:**
+
+1. Push the repo to GitHub (public repo required for free tier)
+2. Go to https://share.streamlit.io/
+3. Sign in with GitHub
+4. Click **"New app"** and fill in:
+   - **Repository:** `YOUR_USERNAME/real-estate-intelligence`
+   - **Branch:** `main`
+   - **Main file path:** `app/app.py`
+5. Click **Deploy**
+
+The build provisions a container, installs `requirements.txt`, and starts the app. First load takes ~5–8 minutes; subsequent loads are instant. The app sleeps after 7 days of inactivity and auto-wakes (~30 seconds) when someone visits.
+
+**Files used by the cloud build:**
+
+| File | Purpose |
+|------|---------|
+| `requirements.txt` | Python dependencies |
+| `runtime.txt` | Pins Python 3.11 |
+| `.streamlit/config.toml` | Theme + server settings |
+| `app/app.py` | Main entry point |
+
+### ☁️ AWS EC2
+
+**Live URL:** http://YOUR_EC2_PUBLIC_IP:8501
+
+AWS EC2 gives full server control and runs 24/7 without sleeping (small monthly cost). Useful for production traffic or when Streamlit Cloud's free tier limits become a constraint.
+
+**Deployment steps:**
+
+#### 1. Set up an EC2 instance
+
+In the AWS Management Console, launch an Ubuntu instance (e.g. `t2.micro` for free-tier testing or `t3.small` for production). Configure the security group to allow:
+
+- Inbound port `8501` (Streamlit's default)
+- Inbound port `22` (SSH)
+
+#### 2. Connect over SSH
+
+```bash
+ssh -i "path_to_your_key.pem" ubuntu@YOUR-EC2-PUBLIC-IP
+```
+
+#### 3. Prepare the instance
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install python3 python3-pip git -y
+```
+
+#### 4. Clone the repo
+
+```bash
+git clone https://github.com/YOUR_USERNAME/real-estate-intelligence.git
+cd real-estate-intelligence
+```
+
+(Or use **WinSCP** to transfer files from your local machine if you prefer a GUI.)
+
+#### 5. Install dependencies
+
+```bash
+pip3 install -r requirements.txt
+```
+
+#### 6. Make sure Streamlit is on PATH
+
+```bash
+export PATH=$PATH:/home/ubuntu/.local/bin
+```
+
+Add it to `~/.bashrc` to make it permanent.
+
+#### 7. Run the app
+
+```bash
+streamlit run app/app.py
+```
+
+The app is now reachable at `http://YOUR-EC2-PUBLIC-IP:8501`.
+
+#### 8. Keep it running in the background
+
+If you close the SSH session the app stops. To detach it:
+
+```bash
+nohup streamlit run app/app.py > streamlit.log 2>&1 &
+```
+
+This runs the app in the background and logs to `streamlit.log`. To stop it later, find the process with `ps aux | grep streamlit` and `kill <PID>`.
+
+#### Optional: production hardening
+
+For a more robust setup, run Streamlit behind **nginx** as a reverse proxy on port 80/443, with **systemd** managing the streamlit process so it auto-restarts on crash or reboot.
+
+```ini
+# /etc/systemd/system/streamlit.service
+[Unit]
+Description=Streamlit App
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/real-estate-intelligence
+ExecStart=/home/ubuntu/.local/bin/streamlit run app/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then `sudo systemctl enable --now streamlit`.
+
+---
+
 ## Results
 
 ### Final dataset
@@ -668,7 +836,7 @@ Gurgaon houses:     783
 Bangalore flats:    485
 Bangalore houses:   470
 ─────────────────────────────────
-Unique sectors:    272 (113 + 167)
+Unique sectors:    273 (113 + 160)
 ```
 
 ### Model performance
@@ -683,8 +851,8 @@ Unique sectors:    272 (113 + 167)
 
 | Input | Predicted price |
 |-------|----------------:|
-| 3 BHK flat, 1500 sqft, **Sector 57 (Gurgaon)**, Mid floor | **₹1.28 Cr** |
-| 3 BHK flat, 1500 sqft, **Whitefield (Bangalore)**, Mid floor | **₹2.00 Cr** |
+| 3 BHK flat, 1500 sqft, **Sector 57 (Gurgaon)**, Mid floor | **₹1.21 Cr** |
+| 3 BHK flat, 1500 sqft, **Whitefield (Bangalore)**, Mid floor | **₹1.96 Cr** |
 | 4 BHK house, 2750 sqft, **Sector 102 (Gurgaon)**, Low floor | ₹4.05 Cr |
 | 4 BHK house, 2500 sqft, **Hebbal (Bangalore)**, Low floor | ₹5.65 Cr |
 
