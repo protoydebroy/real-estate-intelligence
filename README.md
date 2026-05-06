@@ -1,144 +1,155 @@
 # 🏙 Real Estate Intelligence App
 
-An end-to-end machine learning project for **property price prediction**, **similarity search**, and **market analytics** across **Gurgaon and Bangalore**, built from data scraped directly from 99acres.com.
+End-to-end machine learning project for **property price prediction**, **similarity search**, and **market insights** across **Gurgaon** and **Bangalore**, using data scraped from 99acres.com.
+
+```
+4,538 properties  ·  272 unique locations  ·  R² = 0.85  ·  3 cities of analysis
+```
 
 ---
 
-## Table of contents
+## 📑 Table of Contents
 
 1. [Overview](#overview)
-2. [Pipeline flowchart](#pipeline-flowchart)
-3. [Project structure](#project-structure)
-4. [Tech stack](#tech-stack)
-5. [Data scraping](#1-data-scraping)
-6. [Data preprocessing](#2-data-preprocessing)
-7. [Model building](#3-model-building)
-8. [Streamlit app](#4-streamlit-app)
-9. [Setup & run](#setup--run)
-10. [Results](#results)
+2. [Pipeline Flowchart](#pipeline-flowchart)
+3. [Repo Structure](#repo-structure)
+4. [Tech Stack](#tech-stack)
+5. [Stage 1 — Data Gathering (Web Scraping)](#stage-1--data-gathering-web-scraping)
+6. [Stage 2 — Data Preprocessing (7 sub-stages)](#stage-2--data-preprocessing)
+7. [Stage 3 — Model Building](#stage-3--model-building)
+8. [Stage 4 — Recommender System](#stage-4--recommender-system)
+9. [Stage 5 — Insights Module](#stage-5--insights-module)
+10. [Stage 6 — Streamlit App](#stage-6--streamlit-app)
+11. [Setup & Run](#setup--run)
+12. [Results](#results)
 
 ---
 
 ## Overview
 
-This project predicts apartment and house prices, recommends similar properties, and provides market insights for two of India's biggest real-estate markets.
-
 | | Gurgaon | Bangalore | Total |
 |---|---:|---:|---:|
-| Properties (after cleaning) | 3,589 | 954 | **4,543** |
-| Unique locations | 113 | 159 | **272** |
+| Properties (final) | 3,583 | 955 | **4,538** |
+| Locations | 113 | 167 | **272** |
 | Price range (₹ Cr) | 0.07 – 31.5 | 0.40 – 36.0 | – |
 
-The deliverable is a Streamlit web app with three modules:
+The project produces a Streamlit web app with three modules:
 
-- **Price Predictor** — Random Forest regression (R² = 0.85)
-- **Recommender** — multi-signal cosine similarity
-- **Insights** — Ridge regression feature impacts + interactive maps
+- **💰 Price Predictor** — Random Forest regression (R² = 0.85)
+- **🔍 Recommender** — multi-signal cosine similarity
+- **📊 Insights** — Ridge regression + interactive maps
 
 ---
 
-## Pipeline flowchart
+## Pipeline Flowchart
 
 ```mermaid
 flowchart TD
-    A[99acres.com] -->|scraper.py| B[Raw CSVs]
-    B --> B1[flats.csv<br/>2,997 rows]
-    B --> B2[houses.csv<br/>964 rows]
-    B --> B3[bangalore_flats.csv<br/>1,722 rows]
-    B --> B4[bangalore_houses.csv<br/>1,136 rows]
+    classDef raw      fill:#FF6B6B,color:#fff,stroke:#000
+    classDef stage    fill:#FFE66D,color:#000,stroke:#000
+    classDef artifact fill:#4ECDC4,color:#fff,stroke:#000
+    classDef ui       fill:#95E1D3,color:#000,stroke:#000
 
-    B1 --> C[preprocessing.py<br/>Stages 1-2: Field parsing]
-    B2 --> C
-    B3 --> D[preprocessing_bangalore.py<br/>Description parsing<br/>+ format normalization]
-    B4 --> D
+    A[99acres.com]:::raw
 
-    C --> E[Cleaned CSVs]
-    D --> E
+    A -->|scraping/scraper.py| B1[flats.csv<br/>3,017 rows]:::raw
+    A -->|scraping/scraper.py| B2[houses.csv<br/>~1,000 rows]:::raw
+    A -->|scraping/scraper.py| B3[bangalore_flats.csv<br/>1,722 rows]:::raw
+    A -->|scraping/scraper.py| B4[bangalore_houses.csv<br/>1,136 rows]:::raw
 
-    E --> F[merge_with_gurgaon<br/>Add 'city' column]
-    F --> G[all_properties.csv<br/>6,561 rows × 21 cols]
+    B1 --> S1
+    B2 --> S1
+    B3 --> S1
+    B4 --> S1
 
-    G --> H[Stage 3: Sector extraction]
-    H --> I[Stage 4: Feature engineering<br/>built_up_area, luxury_score,<br/>furnishing clusters]
-    I --> J[Stage 5: Outlier treatment<br/>IQR + manual caps]
-    J --> K[Stage 6: KNN imputation<br/>missing values]
-    K --> L[Stage 7: Feature selection<br/>RF + SHAP + LASSO]
+    S1[Stage 1: Clean raw data<br/>preprocessing/01_clean_raw_data.py]:::stage
+    S1 --> S2[Stage 2: Merge cities<br/>preprocessing/02_merge_cities.py]:::stage
+    S2 --> S3[Stage 3: Extract sector<br/>preprocessing/03_extract_sector.py]:::stage
+    S3 --> S4[Stage 4: Feature engineering<br/>preprocessing/04_feature_engineering.py]:::stage
+    S4 --> S5[Stage 5: Outlier treatment<br/>preprocessing/05_outlier_treatment.py]:::stage
+    S5 --> S6[Stage 6: Missing imputation<br/>preprocessing/06_impute_missing.py]:::stage
+    S6 --> S7[Stage 7: Feature selection<br/>preprocessing/07_feature_selection.py]:::stage
 
-    L --> M[all_final_v2.csv<br/>4,543 rows × 14 cols]
+    S7 --> D[all_final_v2.csv<br/>4,538 × 14]:::artifact
 
-    M --> N[model.py<br/>RandomForest 500 trees]
-    M --> O[recommender.py<br/>3 cosine sim matrices]
-    M --> P[insights.py<br/>Ridge regression]
+    D --> M[model/train_model.py<br/>RandomForest 500 trees]:::stage
+    D --> R[model/recommender.py<br/>3 cosine sim matrices]:::stage
+    D --> I[model/insights.py<br/>Ridge regression]:::stage
 
-    N --> Q[pipeline.pkl + df.pkl]
+    M --> P[pipeline.pkl<br/>df.pkl]:::artifact
 
-    Q --> R[app.py - Streamlit]
-    O --> R
-    P --> R
+    P --> APP[app/app.py - Streamlit]:::ui
+    R --> APP
+    I --> APP
 
-    R --> S[💰 Price Predictor]
-    R --> T[🔍 Recommender]
-    R --> U[📊 Insights + Maps]
-
-    style A fill:#FF6B6B,color:#fff
-    style M fill:#4ECDC4,color:#fff
-    style R fill:#95E1D3,color:#000
-    style S fill:#FFE66D,color:#000
-    style T fill:#FFE66D,color:#000
-    style U fill:#FFE66D,color:#000
+    APP --> U1[💰 Price Predictor]:::ui
+    APP --> U2[🔍 Recommender]:::ui
+    APP --> U3[📊 Insights + Maps]:::ui
 ```
 
 ---
 
-## Project structure
+## Repo Structure
 
 ```
 real-estate-intelligence/
+│
+├── README.md                          ← you're here
+├── requirements.txt
+│
 ├── data/
-│   ├── flats.csv                       # Gurgaon raw flats (scraped)
-│   ├── houses.csv                      # Gurgaon raw houses
-│   ├── bangalore_flats.csv             # Bangalore raw flats
-│   ├── bangalore_houses.csv            # Bangalore raw houses
-│   ├── all_properties.csv              # Merged + city column
-│   └── all_final_v2.csv                # Model-ready (4,543 × 14)
+│   ├── raw/                           ← scraped CSVs (one per source)
+│   │   ├── flats.csv                  Gurgaon flats
+│   │   ├── houses.csv                 Gurgaon houses
+│   │   ├── bangalore_flats.csv        Bangalore flats
+│   │   └── bangalore_houses.csv       Bangalore houses
+│   └── processed/
+│       └── all_final_v2.csv           model-ready (4,538 × 14)
 │
-├── scraper.py                          # 99acres multi-city scraper
-├── preprocessing.py                    # Gurgaon cleaning + stages 3-7
-├── preprocessing_bangalore.py          # Bangalore-specific parsers + merge
-├── rebuild_all.py                      # One-shot pipeline rebuild
+├── scraping/
+│   └── scraper.py                     99acres scraper (all 4 types, both cities)
 │
-├── model.py                            # RandomForest training + saving
-├── recommender.py                      # Cosine similarity engine
-├── insights.py                         # Ridge regression analyser
-├── geo_coords.py                       # Lat/lng dict for both cities
+├── preprocessing/
+│   ├── 01_clean_raw_data.py           Stage 1: clean each raw CSV
+│   ├── 02_merge_cities.py             Stage 2: combine + add city column
+│   ├── 03_extract_sector.py           Stage 3: extract location
+│   ├── 04_feature_engineering.py      Stage 4: built_up_area, luxury, etc.
+│   ├── 05_outlier_treatment.py        Stage 5: cap/correct extremes
+│   ├── 06_impute_missing.py           Stage 6: fill missing values
+│   ├── 07_feature_selection.py        Stage 7: final 14 columns
+│   └── run_all.py                     run all 7 stages sequentially
 │
-├── pipeline.pkl                        # Trained model artefact
-├── df.pkl                              # Feature DataFrame artefact
+├── model/
+│   ├── train_model.py                 RandomForest training + save pkl
+│   ├── recommender.py                 cosine similarity recommender
+│   ├── insights.py                    Ridge regression analyser
+│   ├── pipeline.pkl                   trained model (regenerable)
+│   └── df.pkl                         feature DataFrame (regenerable)
 │
-├── app.py                              # Streamlit UI (3 pages)
-└── requirements.txt
+└── app/
+    ├── app.py                         Streamlit UI (3 pages)
+    └── geo_coords.py                  lat/lng for maps
 ```
 
 ---
 
-## Tech stack
+## Tech Stack
 
-| Layer | Tools |
-|------|-------|
-| **Scraping** | `requests`, `beautifulsoup4`, `selenium`, `webdriver-manager`, `ScraperAPI` |
+| Layer | Libraries |
+|------|-----------|
+| **Web scraping** | `requests`, `beautifulsoup4`, `selenium`, `webdriver-manager`, ScraperAPI |
 | **Data wrangling** | `pandas`, `numpy`, `regex` |
-| **ML modelling** | `scikit-learn` (RandomForest, Ridge, LinearRegression, KMeans, KNNImputer, StandardScaler, OneHotEncoder, ColumnTransformer, GridSearchCV), `statsmodels` (OLS), `xgboost` |
-| **Recommender** | Cosine similarity (`sklearn.metrics.pairwise`) |
-| **UI** | `streamlit`, `pydeck` (maps), `altair` (auto via Streamlit) |
-| **Other** | `pickle`, `category_encoders`, `scipy` |
+| **ML modelling** | `scikit-learn` (RandomForest, Ridge, KMeans, KNNImputer, StandardScaler, OneHotEncoder, ColumnTransformer, GridSearchCV), `xgboost`, `statsmodels` |
+| **Recommender** | `sklearn.metrics.pairwise.cosine_similarity` |
+| **UI** | `streamlit`, `pydeck` (maps), `altair` |
 
 ---
 
-## 1. Data scraping
+## Stage 1 — Data Gathering (Web Scraping)
 
-**File:** `scraper.py`
+**File:** [`scraping/scraper.py`](scraping/scraper.py)
 
-The scraper collects four property types per city from 99acres.com:
+Scrapes 4 property types per city from 99acres.com:
 
 | Property type | URL pattern | Output |
 |--------------|-------------|--------|
@@ -147,169 +158,241 @@ The scraper collects four property types per city from 99acres.com:
 | Independent houses | `/independent-house-in-{city}-ffid-page-{n}` | `{city}_houses.csv` |
 | Residential land | `/residential-land-in-{city}-ffid-page-{n}` | `{city}_residential_land.csv` |
 
-### How it works
+### How a scrape iteration works
 
-For each search-result page, the scraper:
+```python
+# Simplified code from scraping/scraper.py
 
-1. Fetches the listing page HTML
-2. Identifies all `<section data-hydration-on-demand="true">` cards
-3. Detects the card type (individual `tupleNew__` listing vs project `GROUPED_PROJECT_TUPLE`)
-4. Extracts surface fields (name, society, price range, area)
-5. Visits the detail page (`<a href>`) for full fields (bathroom, balcony, address, features, description)
-6. Auto-saves to CSV every 5 pages (no data loss on crash)
-7. Skips already-scraped `property_id`s on resume
+def scrape_flats(city, start, end):
+    referer = f'https://www.99acres.com/flats-in-{city}-ffid'
+    records = []
 
-### Anti-blocking strategies
+    for page_num in range(start, end):
+        url = f'https://www.99acres.com/flats-in-{city}-ffid-page-{page_num}'
+
+        # 1. Fetch via ScraperAPI (or Selenium / requests fallback)
+        resp = _fetch(url, referer)
+        if resp.status_code == 410:        # No more pages
+            break
+
+        soup       = BeautifulSoup(resp.content, 'html.parser')
+        search_div = soup.select_one('div[data-label="SEARCH"]')
+
+        # 2. For each listing card on the page
+        for sec in search_div.select('section[data-hydration-on-demand="true"]'):
+            # 3. Extract surface fields from the card
+            link_el  = sec.select_one('a.tupleNew__propertyHeading')
+            link     = link_el['href']
+            society  = sec.select_one('div.tupleNew__locationName').text
+            psqft    = sec.select_one('div.tupleNew__perSqftWrap').text
+
+            # 4. Visit detail page for full fields
+            dresp  = _fetch(link, referer)
+            dsoup  = BeautifulSoup(dresp.content, 'html.parser')
+
+            records.append({
+                'property_name':  sec.select_one('h2.tupleNew__propType').text,
+                'link':           link,
+                'society':        society,
+                'price':          dsoup.select_one('#pdPrice2').text,
+                'area':           psqft,
+                'areaWithType':   dsoup.select_one('#factArea').text,
+                'bedRoom':        dsoup.select_one('#bedRoomNum').text,
+                'bathroom':       dsoup.select_one('#bathroomNum').text,
+                'balcony':        dsoup.select_one('#balconyNum').text,
+                'address':        dsoup.select_one('#address').text,
+                # ... 12 more fields
+            })
+
+        # 5. Save every 5 pages so a crash doesn't lose data
+        if page_num % 5 == 0:
+            _save(records, output)
+```
+
+### Anti-blocking strategies built in
 
 | Strategy | Implementation |
 |----------|---------------|
-| **Rotating User-Agents** | 7 real browser strings, fresh on every request |
+| **Rotating User-Agents** | 7 real browser strings, fresh every request |
 | **Adaptive delays** | 1.5–3.5s between requests, 10–18s every 4 reqs, 50–90s every 20 reqs |
-| **Block detection** | Catches 403, 429, 503, "Access Denied", CAPTCHA, ChromeError pages |
-| **3 fetch backends** | Plain requests → Selenium (webdriver-manager) → ScraperAPI |
-| **Concurrent details (10×)** | `ThreadPoolExecutor` with 5 parallel detail-page workers when using ScraperAPI |
-| **HTTP 410 detection** | Recognizes "no more pages" cleanly instead of treating as error |
-| **Description parser** | When project pages don't have individual `#bedRoomNum` etc., regex extracts BHK/price/area from description text |
+| **Block detection** | Catches 403, 429, 503, "Access Denied", CAPTCHA, ChromeError |
+| **3 fetch backends** | ScraperAPI (primary) → Selenium → plain requests |
+| **HTTP 410 detection** | Recognises "no more pages" and stops cleanly |
+| **Description parser** | Recovers BHK/price/area from project-page descriptions when individual fields are blank (~75% of Bangalore listings) |
+| **Auto-resume** | Skips already-scraped property_ids on restart |
+| **Crash safety** | Saves every 5 pages + `try/finally` save on exit |
 
-### Run
+### Run the scraper
 
 ```bash
-# Interactive mode
-python scraper.py
+# Get a free API key at scraperapi.com (1000 req/month free)
+python scraping/scraper.py \
+    --city bangalore --type flats \
+    --start 1 --end 50 \
+    --api-key YOUR_KEY \
+    --workers 5
 
-# CLI mode (recommended with ScraperAPI)
-python scraper.py --city bangalore --type flats \
-                  --start 1 --end 50 \
-                  --api-key YOUR_SCRAPERAPI_KEY \
-                  --workers 5
+# Without ScraperAPI (uses Selenium, slower but free)
+python scraping/scraper.py --city bangalore --type all --mode selenium
 ```
 
-### Output schema (flats)
+### Sample output: bangalore_flats.csv (truncated)
 
-```
-property_name, link, society, price, area, areaWithType,
-bedRoom, bathroom, balcony, additionalRoom, address,
-floorNum, facing, agePossession, nearbyLocations,
-description, furnishDetails, features, rating, property_id
+```csv
+property_name,link,society,price,area,areaWithType,bedRoom,bathroom,balcony,...
+"3 BHK Flat in Whitefield, Bangalore",https://...,Sumadhura Solace,1.8 Crore,...,Super Built-up area 1450(134.7 sq.m.),3 Bedrooms,3,2,...
+"4 BHK Flat in Hebbal, Bangalore",https://...,Prestige Falcon City,5.65 Crore,...,Super Built-up area 2500(232.3 sq.m.),4 Bedrooms,4,3+,...
 ```
 
 ---
 
-## 2. Data preprocessing
+## Stage 2 — Data Preprocessing
 
-**Files:** `preprocessing.py`, `preprocessing_bangalore.py`
+The preprocessing pipeline is **modular**: each stage is a separate file you can run independently or via `run_all.py`. Each stage takes the previous stage's CSV as input and produces the next stage's CSV as output.
 
-The preprocessing pipeline turns raw scraped CSVs into a 14-column model-ready dataset through 7 stages:
+```bash
+python preprocessing/run_all.py    # runs all 7 stages
+```
 
-### Stages 1-2: Initial cleaning (per source)
+### Stage 1 — Initial cleaning
 
-**Gurgaon** (`preprocessing.py:clean_flats`, `clean_houses`):
-- Parse price strings like `"1.7 Crore"` → `1.7` (float, in Cr)
-- Parse `area` (price/sqft) like `"₹15,500/sqft"` → `15500`
-- Standardize bedroom format (`"3 Bedrooms"` → `3`)
-- Extract additional rooms (servant, study, pooja, store) from comma-separated lists
-- Clean society names (strip ratings, lowercase)
+**File:** [`preprocessing/01_clean_raw_data.py`](preprocessing/01_clean_raw_data.py)
+**Input:** raw `data/raw/*.csv` (4 files)
+**Output:** `data/processed/*_cleaned.csv` (4 files)
 
-**Bangalore** (`preprocessing_bangalore.py`):
-- Same field-parsing as Gurgaon, but with multi-format support:
-
-| Bangalore format | Example | Parser logic |
-|------------------|---------|--------------|
-| Range price | `"₹ 0.94 - 1.34 Cr"` | midpoint → 1.14 |
-| Single price | `"1.7 Crore"`, `"85 Lac"` | direct conversion |
-| Range BHK | `"2-3 BHK"` | upper bound → 3 |
-| Range area | `"1,164 - 1,758 sqft"` | midpoint → 1,461 |
-| Super Built-up | `"Super Built-up area 1130(104.98 sq.m.)"` | extract first number |
-
-- **Description rescue**: ~75% of Bangalore listings are project-pages with empty `bedRoom`/`price` fields. Regex parses the description text to fill these gaps:
-  ```python
-  # "Choose 2,3,4 BHK apartments... in range of 1,170-2,085 sqft...
-  #  price range Rs. 1.23 - 2.19 Cr"
-  → bedRoom=4, price=1.71, areaWithType="1,170-2,085 sqft"
-  ```
-
-### Merge → all_properties.csv
+Universal field parsers handle every format found across the four sources:
 
 ```python
-merge_with_gurgaon(
-    bangalore_flats=...,
-    bangalore_houses=...,
-    gurgaon_flats=...,
-    gurgaon_houses=...,
-)  # adds 'city' column, shuffles, dedupes
-# → 6,561 rows × 21 columns
+# Handles: "1.7 Crore", "85 Lac", "₹ 0.94 - 1.34 Cr"  → float in Cr
+def parse_price_to_cr(s) -> float:
+    # range format
+    m = re.search(r'([\d.]+)\s*[-–]\s*([\d.]+)\s*(Cr|Crore|Lac|L)', s)
+    if m:
+        lo, hi, unit = float(m.group(1)), float(m.group(2)), m.group(3)
+        midpoint = (lo + hi) / 2
+        return midpoint / 100 if unit.startswith('L') else midpoint
+    # single value
+    m = re.search(r'([\d.]+)\s*(Crore|Cr|Lac|L)', s)
+    if m:
+        val, unit = float(m.group(1)), m.group(2)
+        return val / 100 if unit.startswith('L') else val
 ```
 
-### Stage 3: Sector extraction
+**Description recovery (key for Bangalore):** ~75% of Bangalore listings are project-pages with empty individual fields. The description has all the data — regex extracts it:
 
-`preprocessing.py:preprocess_level2` extracts the location ("sector") from `property_name`:
+```python
+# Description: "Choose your dream home from the wide variety of 2,3,4 BHK
+#  apartments in JP Nagar... in range of 1,170-2,085 sqft...
+#  price range Rs. 1.23 - 2.19 Cr"
+# →  bedRoom=4, price=1.71, areaWithType="1,170-2,085 sqft"
+```
+
+Result: rows with `bedRoom`, `price`, and `area` ≥ **97%** populated (was ~33%).
+
+### Stage 2 — Merge cities
+
+**File:** [`preprocessing/02_merge_cities.py`](preprocessing/02_merge_cities.py)
+
+Combines all 4 cleaned files into `all_properties.csv` and adds an explicit `city` column.
+
+```
++ flats_cleaned.csv                  2,863 rows  city=gurgaon
++ house_cleaned.csv                    945 rows  city=gurgaon
++ bangalore_flats_cleaned.csv        1,513 rows  city=bangalore
++ bangalore_house_cleaned.csv        1,087 rows  city=bangalore
+```
+
+### Stage 3 — Extract sector
+
+**File:** [`preprocessing/03_extract_sector.py`](preprocessing/03_extract_sector.py)
+
+Pulls the location from `property_name`:
 - `"3 BHK Flat in Sector 57, Gurgaon"` → `sector 57`
 - `"4 BHK Flat in Whitefield, Bangalore"` → `whitefield, bangalore`
-- Applies a `SECTOR_MAP` dict (~40 manual fixes for Gurgaon naming inconsistencies)
-- Drops sectors with < 3 listings (not representative)
 
-### Stage 4: Feature engineering
+Applies a `SECTOR_MAP` of ~50 known Gurgaon aliases:
+- `"dlf phase 1"` → `sector 26`
+- `"sushant lok phase 3"` → `sector 57`
 
-| Engineered feature | How |
-|-------------------|-----|
-| `built_up_area` | Parsed from `areaWithType` ("Super Built-up area 1130 sq.ft.") with sqm→sqft conversion |
-| `super_built_up_area` | Same but for the `Super Built-up` variant |
-| `carpet_area` | Same for `Carpet area` |
-| `servant room` / `study room` / `pooja room` / `store room` / `others` | Binary 0/1 from `additionalRoom` text |
-| `luxury_score` | Weighted sum of `features` list (Gym=10, Swimming Pool=8, etc.) |
-| `furnishing_type` | KMeans cluster of furnish-counts (3 clusters: unfurnished/semi/furnished) |
+Drops sectors with < 3 listings (not statistically representative).
 
-### Stage 5: Outlier treatment
+### Stage 4 — Feature engineering
 
-- IQR-based capping on `price`, `built_up_area`, `price_per_sqft`
-- Manual review of extreme rows (e.g., 7M-sqft properties → impossible, dropped)
-- Removes ~250 rows
+**File:** [`preprocessing/04_feature_engineering.py`](preprocessing/04_feature_engineering.py)
 
-### Stage 6: Missing-value imputation
+Creates 6 new features:
 
-- **Numeric** (`built_up_area`, `bathroom`, `floorNum`): KNN imputation with k=5
-- **Categorical** (`agePossession`, `facing`): mode-by-group fill (groupby property_type + sector)
-- Removes rows still missing core fields after imputation
+| Feature | How |
+|---------|-----|
+| `built_up_area` (sqft) | Parsed from `areaWithType`: `"Super Built-up area 1130(104.98 sq.m.)"` → 1130. sqm→sqft conversion when applicable |
+| `super_built_up_area`, `carpet_area` | Parsed similarly for the alternate forms |
+| `study room`, `servant room`, `store room`, `pooja room`, `others` | Binary 0/1 from `additionalRoom` text |
+| `luxury_score` | Weighted sum: Golf Course=10, Spa=9, Gym=8, ATM=4 across 100 amenities |
+| `furnishing_type` | KMeans(3) cluster of furnish-detail counts (0=unfurnished, 1=semi, 2=furnished) |
+| `agePossession` | Bucketed into 5 categories (New, Relatively New, Moderately Old, Old, Under Construction) |
 
-### Stage 7: Feature selection
+### Stage 5 — Outlier treatment
 
-After comparing 6 selection methods (correlation, RF importance, SHAP, permutation, LASSO, Recursive Feature Elimination), the final 13 features are kept:
+**File:** [`preprocessing/05_outlier_treatment.py`](preprocessing/05_outlier_treatment.py)
+
+- IQR-based capping on `price_per_sqft` (with ×9 scale-fix for sqyd typos)
+- Drop area > 100,000 sqft (impossible) and 9 known bad rows
+- Manual area corrections for 8 specific rows (verified during EDA)
+- Cap `bedRoom` ≤ 10
+- Recalculate `price_per_sqft` after corrections
+
+### Stage 6 — Missing-value imputation
+
+**File:** [`preprocessing/06_impute_missing.py`](preprocessing/06_impute_missing.py)
+
+Smart `built_up_area` imputation using ratios derived from complete rows:
 
 ```
-city, property_type, sector, bedRoom, bathroom, balcony,
+r_super  = median(super_built_up / built_up)   ≈ 1.106
+r_carpet = median(carpet         / built_up)   ≈ 0.901
+
+# When built_up is missing:
+if super and carpet present:  built_up = (super/r_super + carpet/r_carpet) / 2
+elif super present:           built_up = super / r_super
+elif carpet present:          built_up = carpet / r_carpet
+```
+
+For categorical missing values (`agePossession='Undefined'`), three-pass mode imputation:
+1. From `(sector + property_type)` group mode
+2. Then from `(sector)` group mode
+3. Finally from `(property_type)` group mode
+
+### Stage 7 — Feature selection
+
+**File:** [`preprocessing/07_feature_selection.py`](preprocessing/07_feature_selection.py)
+
+Discretises continuous features and drops low-importance columns (confirmed via consensus of RF importance, SHAP, permutation, LASSO):
+
+- `luxury_category` ← discretised `luxury_score` (Low/Medium/High)
+- `floor_category` ← discretised `floorNum` (Low/Mid/High Floor)
+
+**Final 14 columns** (model-ready):
+```
+city, property_type, sector, price, bedRoom, bathroom, balcony,
 agePossession, built_up_area, servant room, store room,
 furnishing_type, luxury_category, floor_category
 ```
 
-`luxury_category` is a discretised `luxury_score` (Low / Medium / High); `floor_category` is a discretised `floorNum` (Low / Mid / High Floor). Both improved tree-model performance over the raw versions.
-
-### Run preprocessing end-to-end
-
-```bash
-python rebuild_all.py
-```
-
-This runs all 7 stages sequentially and produces `all_final_v2.csv` (4,543 × 14).
-
 ---
 
-## 3. Model building
+## Stage 3 — Model Building
 
-### 3.1 Price prediction model
+**File:** [`model/train_model.py`](model/train_model.py)
 
-**File:** `model.py`
-
-#### Algorithm comparison
-
-The notebook `model-selection.ipynb` benchmarks 11 algorithms with 10-fold cross-validation:
+### Algorithm comparison (10-fold CV)
 
 | Model | CV R² | MAE (Cr) |
 |-------|------:|---------:|
 | **Random Forest** ⭐ | **0.854** | 0.39 |
 | Extra Trees | 0.851 | 0.41 |
 | XGBoost | 0.849 | 0.40 |
-| Gradient Boosting | 0.834 | 0.43 |
 | LightGBM | 0.844 | 0.42 |
+| Gradient Boosting | 0.834 | 0.43 |
 | Ridge | 0.851 | 0.45 |
 | Lasso | 0.847 | 0.46 |
 | Linear Regression | 0.851 | 0.45 |
@@ -317,99 +400,127 @@ The notebook `model-selection.ipynb` benchmarks 11 algorithms with 10-fold cross
 | KNN | 0.798 | 0.55 |
 | SVR | 0.812 | 0.51 |
 
-Random Forest wins on R², doesn't need scaling for inference, handles mixed types naturally → final choice.
+Random Forest wins → final choice.
 
-#### Pipeline architecture
+### Pipeline
 
 ```python
 ColumnTransformer:
-  - num: StandardScaler        on [bedRoom, bathroom, built_up_area,
-                                    servant room, store room]
-  - cat: OneHotEncoder         on [city, property_type, sector, balcony,
-        (drop_first=True,        agePossession, furnishing_type,
-         handle_unknown=         luxury_category, floor_category]
-         'ignore')
-↓
-RandomForestRegressor(
-    n_estimators=500,
-    random_state=42,
+  • num: StandardScaler      on  [bedRoom, bathroom, built_up_area,
+                                  servant room, store room]
+  • cat: OneHotEncoder       on  [city, property_type, sector, balcony,
+        (drop_first=True,         agePossession, furnishing_type,
+         handle_unknown='ignore') luxury_category, floor_category]
+        ↓
+RandomForestRegressor(n_estimators=500, random_state=42)
+```
+
+The target is **log-transformed** (`np.log1p(price)`) before training and inverse-transformed (`np.expm1`) at predict time. Real-estate prices are heavily right-skewed → log space gives much better MAE.
+
+### Adding `city` as an explicit feature
+
+Adding `city` as its own categorical feature (rather than relying on sector OHE) **boosted CV R² from 0.844 → 0.855**.
+
+### Final performance
+
+| Metric | Value |
+|--------|------:|
+| 10-fold CV R² | **0.855 ± 0.018** |
+| Train R² | 0.982 |
+| MAE | ₹0.42 Cr |
+
+### Run
+
+```bash
+python model/train_model.py
+# → produces model/pipeline.pkl + model/df.pkl
+```
+
+---
+
+## Stage 4 — Recommender System
+
+**File:** [`model/recommender.py`](model/recommender.py)
+
+A **multi-signal cosine similarity** engine. Three independent similarity matrices computed once at startup, then weighted at query time:
+
+| Signal | Features used | Default weight |
+|--------|---------------|---------------:|
+| **Numerical** | price, bedRoom, bathroom, built_up_area, servant room, store room | **30** |
+| **Categorical** | property_type, agePossession, furnishing_type, luxury_category, floor_category, balcony | **20** |
+| **Location** | sector, city | **8** |
+
+Combined similarity score:
+
+```python
+final_sim = w_num × cosine_sim(num_features) +
+            w_cat × cosine_sim(cat_features) +
+            w_loc × cosine_sim(loc_features)
+```
+
+Each `cosine_sim()` is `cosine_similarity(StandardScaler.fit_transform(features))`.
+
+### `recommend_by_filters()` flow
+
+```python
+def recommend_by_filters(city, sector, property_type, bedrooms, budget_max, top_n=5):
+    # 1. Apply filters to find matching candidates
+    candidates = df[df.city == city &
+                    df.bedRoom == bedrooms &
+                    df.price <= budget_max]
+
+    # 2. Use the median-priced match as the "anchor" property
+    ref_idx = candidates.iloc[
+        (candidates.price - candidates.price.median()).abs().argsort()
+    ].index[0]
+
+    # 3. Return top-N nearest neighbors of the anchor
+    scores = combined_sim[ref_idx]
+    top    = np.argsort(scores)[::-1][1:top_n+1]   # skip self
+    return df.iloc[top]
+```
+
+### Sample query
+
+```python
+from recommender import PropertyRecommender
+rec = PropertyRecommender('data/processed/all_final_v2.csv')
+
+results = rec.recommend_by_filters(
+    city          = 'bangalore',
+    sector        = 'whitefield, bangalore',
+    property_type = 'flat',
+    bedrooms      = 3,
+    budget_max    = 3.0,    # ₹ 3 Cr max
+    top_n         = 5,
 )
 ```
 
-The target is **log-transformed** (`np.log1p(price)`) before fitting and inverse-transformed (`np.expm1`) on prediction. Skewed real-estate prices benefit hugely from log-space.
+Returns the 5 most similar properties as a DataFrame with a `SimilarityScore` column.
 
-#### Hyperparameter tuning
+---
 
-`tune_random_forest()` runs `GridSearchCV` over:
-```python
-n_estimators: [100, 200, 300]
-max_depth:    [None, 10, 20]
-max_samples:  [0.5, 0.75, 1.0]
-max_features: ['sqrt', 'log2']
-```
-The combined-city dataset slightly favors `n_estimators=500, max_depth=None, max_features='sqrt'`.
+## Stage 5 — Insights Module
 
-#### Final performance
+**File:** [`model/insights.py`](model/insights.py)
 
-| Metric | Gurgaon-only | Combined (with city) |
-|--------|-------------:|---------------------:|
-| 10-fold CV R² | 0.844 ± 0.014 | **0.855 ± 0.018** |
-| Train R² | 0.978 | 0.982 |
-| MAE (Cr) | 0.39 | 0.42 |
+Per-city **Ridge regression** for **interpretable feature impacts** — a direct port of the `insights-module.ipynb` analysis.
 
-Adding `city` as an explicit feature **boosted R² by 1.1 points** vs. relying on sector OHE alone.
-
-### 3.2 Recommender system
-
-**File:** `recommender.py`
-
-A **multi-signal cosine similarity** recommender. Three independent similarity matrices are computed once at startup, then weighted at query time:
-
-| Signal | Features | Weight |
-|--------|----------|-------:|
-| **Numerical** | price, bedRoom, bathroom, built_up_area, servant room, store room | 30 |
-| **Categorical** | property_type, agePossession, furnishing_type, luxury_category, floor_category, balcony | 20 |
-| **Location** | sector, city | 8 |
-
-Combined score:
-```
-final = 30·sim_num + 20·sim_cat + 8·sim_loc
-```
-
-Weights tunable from the UI sliders. Each signal is a `cosine_similarity(StandardScaler.fit_transform(features))` matrix shape `(N, N)`.
-
-#### `recommend_by_filters()` flow
-
-```
-city + sector + bhk + budget filters
-       ↓
-Find best matching reference property (closest to median price)
-       ↓
-Return top-N nearest neighbors by combined similarity
-       ↓
-Optionally restrict to same city
-```
-
-This handles cases where the user gives loose filters (e.g. just "Bangalore + 3 BHK") — we pick the median-priced match as the anchor.
-
-### 3.3 Insights module
-
-**File:** `insights.py`
-
-A direct port of `insights-module.ipynb` with multi-city support. Per-city Ridge regression for **interpretable feature impacts**.
-
-#### Methodology (matches the notebook line-for-line)
+### Methodology
 
 ```python
-# 1. Drop low-impact cols
-df = df.drop(['store room', 'floor_category', 'balcony'])
+# 1. Drop low-impact: store room, floor_category, balcony
 
 # 2. Normalise agePossession into 3 buckets
-df['agePossession'].replace({'Relatively New': 'new', ...})
+df['agePossession'] = df['agePossession'].replace({
+    'Relatively New': 'new', 'New Property': 'new',
+    'Moderately Old': 'old', 'Old Property': 'old',
+    'Under Construction': 'under construction',
+})
 
 # 3. Ordinal encoding
-df['property_type'] = {flat: 0, house: 1}
-df['luxury_category'] = {Low: 0, Medium: 1, High: 2}
+df['property_type']   = {'flat': 0, 'house': 1}
+df['luxury_category'] = {'Low': 0, 'Medium': 1, 'High': 2}
 
 # 4. OHE sector + agePossession
 new_df = pd.get_dummies(df, columns=['sector', 'agePossession'], drop_first=True)
@@ -417,126 +528,130 @@ new_df = pd.get_dummies(df, columns=['sector', 'agePossession'], drop_first=True
 # 5. Log-transform target
 y_log = np.log1p(price)
 
-# 6. Standardise features
+# 6. Standardise + fit
 X_scaled = StandardScaler().fit_transform(X)
-
-# 7. Fit Ridge(alpha=0.0001)
-ridge.fit(X_scaled, y_log)
-
-# 8. ALSO fit OLS via statsmodels for p-values, conf intervals, R²/Adj R²
-sm.OLS(y_log, sm.add_constant(X_scaled)).fit()
+ridge    = Ridge(alpha=0.0001).fit(X_scaled, y_log)
 ```
 
-#### Verified outputs (Gurgaon-only)
+### Practical interpretation
 
-| Metric | Notebook | Implementation |
-|--------|---------:|---------------:|
-| 10-fold CV R² | 0.8513 ± 0.0170 | **0.8513 ± 0.0170 ✓** |
-| OLS R² | 0.865 | 0.8649 ✓ |
-| OLS Adj R² | 0.860 | 0.8605 ✓ |
-| F-statistic | 196.7 | 196.7 ✓ |
-| `built_up_area` coef | 0.2106 | 0.2106 ✓ |
-| `property_type` coef | 0.1202 | 0.1202 ✓ |
-| `bedRoom` coef | 0.0540 | 0.0540 ✓ |
+Each Ridge coefficient = **log-price change per 1 standard deviation of the feature**. To translate to plain English ("if I add 100 sqft, how much does price change?"):
 
-#### Practical interpretation
-
-Each coefficient = **log-price change per 1 standard deviation** of the feature. To translate to plain English:
-
-```
+```python
 delta_std    = delta_raw / scaler.scale_[col]
 log_change   = coef × delta_std
 pct_change   = (np.expm1(log_change) - 1) × 100
 ```
 
-Example: increasing `built_up_area` by 100 sqft in Gurgaon corresponds to a **+0.15% price change** at the median property; the same 100 sqft in Bangalore is **+1.36%** (Bangalore's ₹/sqft elasticity is higher).
+### Sample query
+
+```python
+from insights import InsightsAnalyzer
+ins = InsightsAnalyzer('data/processed/all_final_v2.csv')
+
+ins.cv_score('gurgaon')
+# → {'r2_mean': 0.851, 'r2_std': 0.017, ...}
+
+ins.feature_importance('gurgaon', top_n=5)
+# →   feature           coefficient  direction
+#     built_up_area       0.2106         +
+#     property_type       0.1202         +
+#     bathroom            0.0651         +
+#     bedRoom             0.0540         +
+#     servant room        0.0509         +
+
+ins.predict_impact('gurgaon', 'built_up_area', delta=100)
+# → {'price_pct': +0.15%, 'coefficient': 0.2106, ...}
+```
+
+### Verified outputs (Gurgaon-only)
+
+| Metric | Notebook | Implementation |
+|--------|---------:|---------------:|
+| 10-fold CV R² | 0.8513 ± 0.0170 | 0.8513 ± 0.0170 ✓ |
+| OLS R² | 0.865 | 0.8649 ✓ |
+| `built_up_area` coef | 0.2106 | 0.2106 ✓ |
 
 ---
 
-## 4. Streamlit app
+## Stage 6 — Streamlit App
 
-**File:** `app.py`
+**File:** [`app/app.py`](app/app.py)
 
-Three-page Streamlit app with sidebar navigation and theme-safe styling.
+Three-page Streamlit app with sidebar navigation.
 
-### Page 1 — 💰 Price Predictor
+### 💰 Page 1 — Price Predictor
 
-User picks city → location dropdown filters to that city's sectors only (113 for Gurgaon, 159 for Bangalore). Then enters property details (BHK, area, balcony, age, furnishing, floor, luxury). The app:
+- Pick city → Location dropdown filtered to that city's sectors
+- Form for BHK, area, balcony, age, furnishing, floor, luxury level, etc.
+- Predicts price, ±10% confidence band, implied ₹/sqft
+- Compares against similar listings (median, min, max)
 
-1. Builds a single-row DataFrame with all 13 features
-2. Calls `pipe.predict()` then `np.expm1()` to get price in ₹ Cr
-3. Shows: predicted price, ±10% likely range, implied ₹/sqft
-4. **Compares with similar listings**: median, min, max from the dataset for `(city × type × bedrooms)`
-5. Tells the user if the estimate is above/below market median
+### 🔍 Page 2 — Recommender
 
-### Page 2 — 🔍 Recommender
+- Filters: city, location, type, BHK, budget
+- Adjustable similarity weights (numerical / categorical / location)
+- Results displayed as **3-column card grid**, color-coded by match strength
 
-Filters: city, location, type, BHK, budget. Sliders for similarity weights (numerical / categorical / location).
+### 📊 Page 3 — Insights (6 sub-tabs)
 
-Results displayed as **3-column card grid**:
-- Color-coded top border (green if score > 85% of max, blue if > 65%, orange otherwise)
-- Property name, price, BHK, area, age, luxury, ₹/sqft
-- Full results table in expander
+| Tab | Shows |
+|-----|-------|
+| 🗺 **Map** | Interactive `pydeck` map with all 272 sectors. Toggle: color by price / count / ₹ per sqft |
+| 📊 **Distributions** | 6 charts: price histogram, area histogram, BHK split, type split, furnishing, luxury, scatter (price vs area) |
+| 🏘 **Locations** | Sector ranking by 4 metrics, configurable top-N, cheapest 5 vs priciest 5 |
+| 💰 **Price drivers** | Ridge coefficients chart with readable labels |
+| 🆚 **City comparison** | Side-by-side Gurgaon vs Bangalore: stats table, price by BHK/type/luxury/age, affordability heatmap |
+| 🔬 **Custom impact** | "What if I add 100 sqft?" calculator |
 
-### Page 3 — 📊 Insights (6 sub-tabs)
+### Run the app
 
-| Tab | What it shows |
-|-----|---------------|
-| 🗺 **Map** | Interactive `pydeck` scatter map of all 272 sectors. Dot size + color encodes price/listing-count/₹-per-sqft (toggle). Hover tooltips show full stats. |
-| 📊 **Distributions** | Price histogram, area histogram, BHK breakdown, type split, furnishing levels, luxury levels, scatter plot of price vs area colored by type |
-| 🏘 **Locations** | Sector ranking by 4 metrics, configurable top-N, side-by-side cheapest 5 vs priciest 5 |
-| 💰 **Price drivers** | Ridge coefficients chart (top 20). Separate "core features only" chart hiding sector OHE noise. Full coefficient table |
-| 🆚 **City comparison** | Side-by-side stats for both cities. Median price by BHK, by type, by luxury level, by age. Color-coded affordability heatmap |
-| 🔬 **Custom impact** | "What if I add 100 sqft?" calculator using Ridge model coefficients |
-
-### Sidebar
-
-- App branding
-- Page selector (radio)
-- Live dataset stats (4,544 properties, 953 Bangalore, 3,591 Gurgaon)
+```bash
+streamlit run app/app.py
+```
 
 ---
 
-## Setup & run
+## Setup & Run
 
-### Prerequisites
+### 1. Clone the repo
 
 ```bash
-pip install pandas numpy scikit-learn matplotlib seaborn scipy \
-            xgboost beautifulsoup4 requests selenium webdriver-manager \
-            streamlit category-encoders statsmodels pydeck
+git clone https://github.com/YOUR_USERNAME/real-estate-intelligence.git
+cd real-estate-intelligence
 ```
 
-### Quick start
+### 2. Install dependencies
 
 ```bash
-# 1. Scrape data (or use included CSVs)
-python scraper.py --city gurgaon --type all --start 1 --end 50 \
-                  --api-key YOUR_SCRAPERAPI_KEY
-python scraper.py --city bangalore --type all --start 1 --end 50 \
-                  --api-key YOUR_SCRAPERAPI_KEY
-
-# 2. Rebuild the entire pipeline in one command
-python rebuild_all.py
-
-# 3. Launch the app
-streamlit run app.py
+pip install -r requirements.txt
 ```
 
-### Modular run (if needed)
+### 3. Either use the provided dataset OR rebuild from raw
+
+#### Option A — Use provided dataset (faster)
 
 ```bash
-# Just clean Bangalore data and merge with Gurgaon
-python preprocessing_bangalore.py
+# data/processed/all_final_v2.csv is already in the repo
+python model/train_model.py        # builds pipeline.pkl + df.pkl
+streamlit run app/app.py
+```
 
-# Just train the model
-python model.py
+#### Option B — Rebuild from raw scraped data
 
-# Just smoke-test the recommender
-python recommender.py
+```bash
+# Optional: scrape fresh data (skip if you already have data/raw/*.csv)
+python scraping/scraper.py --city gurgaon   --type all --start 1 --end 50 --api-key YOUR_KEY
+python scraping/scraper.py --city bangalore --type all --start 1 --end 50 --api-key YOUR_KEY
 
-# Just verify the insights module against the notebook
-python insights.py
+# Run the full preprocessing pipeline
+python preprocessing/run_all.py
+
+# Train the model
+python model/train_model.py
+
+# Launch the app
+streamlit run app/app.py
 ```
 
 ---
@@ -546,14 +661,14 @@ python insights.py
 ### Final dataset
 
 ```
-Total: 4,543 properties
+Total: 4,538 properties
 ─────────────────────────────────
-Gurgaon flats:    2,805
-Gurgaon houses:     784
+Gurgaon flats:    2,800
+Gurgaon houses:     783
 Bangalore flats:    485
-Bangalore houses:   469
+Bangalore houses:   470
 ─────────────────────────────────
-Unique sectors:    272 (113 + 159)
+Unique sectors:    272 (113 + 167)
 ```
 
 ### Model performance
@@ -563,16 +678,15 @@ Unique sectors:    272 (113 + 159)
 | 10-fold CV R² | **0.855 ± 0.018** |
 | Train R² | 0.982 |
 | MAE | ₹0.42 Cr |
-| MAPE | ~18% |
 
 ### Sample predictions
 
 | Input | Predicted price |
 |-------|----------------:|
-| 3 BHK flat, 1500 sqft, Sector 57 (Gurgaon), Mid floor | **₹1.22 Cr** |
-| 3 BHK flat, 1500 sqft, Whitefield (Bangalore), Mid floor | **₹1.87 Cr** |
-| 4 BHK house, 2750 sqft, Sector 102 (Gurgaon), Low floor | **₹4.05 Cr** |
-| 4 BHK house, 2500 sqft, Hebbal (Bangalore), Low floor | **₹5.65 Cr** |
+| 3 BHK flat, 1500 sqft, **Sector 57 (Gurgaon)**, Mid floor | **₹1.28 Cr** |
+| 3 BHK flat, 1500 sqft, **Whitefield (Bangalore)**, Mid floor | **₹2.00 Cr** |
+| 4 BHK house, 2750 sqft, **Sector 102 (Gurgaon)**, Low floor | ₹4.05 Cr |
+| 4 BHK house, 2500 sqft, **Hebbal (Bangalore)**, Low floor | ₹5.65 Cr |
 
 The model correctly captures that Bangalore prices/sqft run higher than Gurgaon for the same configuration.
 
@@ -580,10 +694,9 @@ The model correctly captures that Bangalore prices/sqft run higher than Gurgaon 
 
 ## License
 
-MIT — feel free to use for learning and projects.
+MIT
 
 ## Acknowledgments
 
 - Data source: [99acres.com](https://www.99acres.com/)
 - Coordinates: OpenStreetMap public data
-- Inspired by the original Gurgaon-only project, extended to multi-city

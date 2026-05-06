@@ -1,7 +1,7 @@
 # ============================================================
-# Real Estate Intelligence App — requirements
+# Real Estate Intelligence — requirements
 # ============================================================
-# Install with:
+# Install:
 #   pip install -r requirements.txt
 # ============================================================
 
